@@ -1,6 +1,5 @@
 import { HandlerEvent } from "@netlify/functions";
 import { createHmac } from "crypto";
-
 import fetch from "node-fetch";
 import { title } from "process";
 
@@ -45,7 +44,7 @@ export const blocks = {
         }
     },
     input: ({
-        id, label, placeholder, initial_value = '', hint=''
+        id, label, placeholder, initial_value = '', hint='', type = 'plain_text_input'
     }: InputBlockArgs): SlackBlockInput => {
         return {
             block_id: `${id}_block`,
@@ -56,7 +55,7 @@ export const blocks = {
             },
             element: {
                 action_id: id,
-                type: 'plain_text_input',
+                type: type,
                 placeholder: {
                     type: 'plain_text',
                     text: placeholder

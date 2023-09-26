@@ -1,6 +1,5 @@
 import fetch from "node-fetch";
 import type { Handler } from '@netlify/functions';
-
 import {parse} from 'querystring'
 import { blocks, getUsernames, modal, slackApi, verifySlackRequest } from './util/slack';
 
@@ -59,10 +58,16 @@ const  handleSlashCommand= async (payload: SlackSlashCommandPayload) => {
 }
 
 const handleInteractivity = async (payload:SlackModalPayload) => {
-	const callback_id = payload.callback_id ?? payload.view.callback_id;
+	console.log('payload', payload)
+	const callback_id = payload.callback_id ?? payload?.view?.callback_id;
+	let action = ''
+	if (!callback_id) {
+		const {actions} = payload;
+		const {value} = actions![0]
+		action = value
+	}
 
-	switch(callback_id) {
-
+	switch(callback_id || action) {
 		case 'foodfight-modal':
 			const data = payload.view.state.values;
 			const fields = {
@@ -76,15 +81,52 @@ const handleInteractivity = async (payload:SlackModalPayload) => {
 				channel: 'C05SC31JZ0Q',
 				text: `oh dang, ya'll  <@${fields.submitter}>`
 			})
-
 			break;
 
-			default:
-				console.log('No handler defined for', callback_id)
-				return {
-					statusCode: 400,
-					body: `No Handler found for ${callback_id}`
-				}
+		case 'give_me_feedback':
+			const response = await slackApi('views.open', 
+			modal({
+					id: 'foodfight-modal',
+					title: 'Start a food fight',
+					trigger_id: payload.trigger_id,
+					blocks: [
+						blocks.section({
+							text: 'Experimentation Feedback"'
+						}),
+						blocks.radios({
+							id: 'spice_level',
+							label: 'How satisfied are you with the support you receive from the team?',
+							placeholder: 'Select a spice level',
+							options: [
+								{label: '1  Not at all satisfied', value: '1'},
+								{label: '2', value: '2'},
+								{label: '3', value: '3'},
+								{label: '4', value: '4'},
+								{label: '5 = Very satisfied', value: '5'},
+							]
+						}),
+						blocks.input({
+							id: 'opinion',
+							label: 'Please tell us why you answered the way you did',
+							placeholder: 'It steered us towards success',
+							initial_value: payload.text ?? '',
+							hint: 'Your comments will help us improve our process'
+						}),
+					]
+				})
+			)
+
+			if (!response.ok) {
+				console.log('Error', response)
+			}
+			break;	
+
+		default:
+			console.log('No handler defined for', callback_id)
+			return {
+				statusCode: 400,
+				body: `No Handler found for ${callback_id}`
+			}
 	}
 
 	return {
@@ -98,10 +140,38 @@ const handleTextCommand = async (body:SlackSlashCommandPayload) => {
 	const usernames = getUsernames(text);
 	const channel = usernames[0]
 
+	const bs = [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Please click on the button :point_down::skin-tone-2: below to give quick feedback based on your experience in Experimentation Surgery"
+			}
+		},
+		{
+			"type": "divider"
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "SURGERY FEEDBACK",
+						"emoji": true
+					},
+					"value": "give_me_feedback"
+				}
+			]
+		}
+	]
+
 	await slackApi('chat.postMessage', {
 		channel: channel,
-		text: `oh dang, ya'll`
+		blocks: bs
 	})
+
 	return {
 		statusCode: 200,
 		body: ''

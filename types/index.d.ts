@@ -104,6 +104,7 @@ type ModalArgs = {
 };
 
 type SlackModalPayload = {
+	text: string;
 	type: string;
 	callback_id?: string;
 	team: {
@@ -154,7 +155,17 @@ type SlackModalPayload = {
 		app_installed_team_id: string;
 		bot_id: string;
 	};
+	actions?: Actions[];
 };
+
+type Actions = {
+	action_id: string;
+	block_id: string;
+	text?: (null)[] | null;
+	value: string;
+	type: string;
+	action_ts: string;
+}
 
 type SlackApiEndpoint = 'chat.postMessage' | 'views.open';
 
@@ -173,6 +184,7 @@ type SectionBlockArgs = {
 type InputBlockArgs = {
 	initial_value?: string;
 	hint?: string;
+	type?: string;
 } & BlockArgs;
 
 type SelectBlockArgs = {
