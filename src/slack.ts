@@ -2,6 +2,7 @@ import fetch from "node-fetch";
 import type { Handler } from '@netlify/functions';
 import {parse} from 'querystring'
 import { blocks, getUsernames, modal, slackApi, verifySlackRequest } from './util/slack';
+import { saveFeedback } from "./util/sheet";
 
 const  handleSlashCommand= async (payload: SlackSlashCommandPayload) => {
 	switch(payload.command) {
@@ -71,15 +72,17 @@ const handleInteractivity = async (payload:SlackModalPayload) => {
 		case 'foodfight-modal':
 			const data = payload.view.state.values;
 			const fields = {
-				opinions: data.opinion_block.opinion.value,
-				spiceLevel: data.spice_level_block.spice_level.selected_option.value,
-				submitter: payload.user.id,
-				submitterName: payload.user.name
+				Feedback: data.opinion_block.opinion.value,
+				Satisfaction: data.spice_level_block.spice_level.selected_option.value,
+				Name: payload.user.name,
+				Date: new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })
 			}
-			console.log(fields);
+
+			saveFeedback(fields);
+			
 			await slackApi('chat.postMessage', {
-				channel: 'C05SC31JZ0Q',
-				text: `oh dang, ya'll  <@${fields.submitter}>`
+				channel: payload.user.id,
+				text: `Feedback Successfully Given, thank you  <@${payload.user.id}>`
 			})
 			break;
 
@@ -147,9 +150,6 @@ const handleTextCommand = async (body:SlackSlashCommandPayload) => {
 				"type": "mrkdwn",
 				"text": "Please click on the button :point_down::skin-tone-2: below to give quick feedback based on your experience in Experimentation Surgery"
 			}
-		},
-		{
-			"type": "divider"
 		},
 		{
 			"type": "actions",
