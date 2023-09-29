@@ -69,7 +69,7 @@ type SlackBlockInput = {
 	};
 };
 
-type SlackBlock = SlackBlockSection | SlackBlockInput;
+type SlackBlock = SlackBlockSection | SlackBlockInput | SlackContext;
 
 type FoodOpinionModalState = {
 	values: {
@@ -156,6 +156,9 @@ type SlackModalPayload = {
 		bot_id: string;
 	};
 	actions?: Actions[];
+	container: {
+		message_ts?: string
+	}
 };
 
 type Actions = {
@@ -167,7 +170,7 @@ type Actions = {
 	action_ts: string;
 }
 
-type SlackApiEndpoint = 'chat.postMessage' | 'views.open';
+type SlackApiEndpoint = 'chat.postMessage' | 'views.open' | 'chat.update' | 'chat.delete';
 
 type SlackApiRequestBody = {};
 
@@ -222,3 +225,14 @@ type NewItem = {
 	status?: string;
 	submitter?: string;
 };
+
+type SlackContext = {
+	type: string
+	elements: ContextElement[]
+}
+
+type ContextElement = {
+	type: string
+	text: string
+	emoji: boolean
+}

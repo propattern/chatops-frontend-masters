@@ -126,6 +126,18 @@ export const blocks = {
                 })
             }
         }
+    },
+    context: (text: string) : SlackContext => {
+        return {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "plain_text",
+                    "text": text,
+                    "emoji": true
+                }
+            ]							
+        }
     }
 }
 

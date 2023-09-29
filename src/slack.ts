@@ -59,7 +59,6 @@ const  handleSlashCommand= async (payload: SlackSlashCommandPayload) => {
 }
 
 const handleInteractivity = async (payload:SlackModalPayload) => {
-	console.log('payload', payload)
 	const callback_id = payload.callback_id ?? payload?.view?.callback_id;
 	let action = ''
 	if (!callback_id) {
@@ -78,15 +77,38 @@ const handleInteractivity = async (payload:SlackModalPayload) => {
 				Date: new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })
 			}
 
-			saveFeedback(fields);
+			const {view} = payload;
+			const {blocks: blacks} = view;
+			const section = blacks[0] as SlackBlockSection
+			const {text} = section
+			const {text: transactionText} = text;
+			const chatId = transactionText.replace('Experimentation Feedback: ', '');
+
+			await saveFeedback(fields);
 			
+			await slackApi('chat.delete', {
+				channel: payload.user.id,
+				ts: chatId.trim(),
+			})
+
 			await slackApi('chat.postMessage', {
 				channel: payload.user.id,
-				text: `Feedback Successfully Given, thank you  <@${payload.user.id}>`
+				ts: chatId.trim(),
+				blocks: [
+					{
+						"type": "section",
+						"text": {
+							"type": "mrkdwn",
+							text: `Feedback Given :white_check_mark:. Thank you  ${payload.user.name}`
+						}
+					}
+				]
 			})
 			break;
 
 		case 'give_me_feedback':
+			const {container} = payload;
+			const {message_ts} = container;
 			const response = await slackApi('views.open', 
 			modal({
 					id: 'foodfight-modal',
@@ -94,12 +116,12 @@ const handleInteractivity = async (payload:SlackModalPayload) => {
 					trigger_id: payload.trigger_id,
 					blocks: [
 						blocks.section({
-							text: 'Experimentation Feedback"'
+							text: `Experimentation Feedback: ${message_ts}`
 						}),
 						blocks.radios({
 							id: 'spice_level',
 							label: 'How satisfied are you with the support you receive from the team?',
-							placeholder: 'Select a spice level',
+							placeholder: 'Select a spice level XXX',
 							options: [
 								{label: '1  Not at all satisfied', value: '1'},
 								{label: '2', value: '2'},
